@@ -63,8 +63,11 @@ struct ContentView: View {
                     )
                 }
             }
+            .frame(maxWidth: .infinity)
             .padding()
+            .contentShape(Rectangle())
         }
+        .frame(maxWidth: .infinity)
         .onAppear() {
             loadTasks()
         }
@@ -208,31 +211,44 @@ struct SectionView: View {
                     onTitleTapped()
                 }
             
-            ForEach(tasks) { task in
-                HStack {
-                    Text(task.text)
-                        .padding(.vertical, 5)
-                        .padding(.horizontal)
-                        .background(Color.white.opacity(0.2))
-                        .cornerRadius(5)
-                        .foregroundColor(.white)
-                    Spacer()
-                    Button(action: {
-                        if let index = tasks.firstIndex(of: task) {
-                            tasks.remove(at: index)
-                            onDelete()
-                        }
-                    }) {
-                        Image(systemName: "trash")
+            if tasks.isEmpty {
+                Text("No tasks yet")
+                    .foregroundColor(.white.opacity(0.6))
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+            } else {
+                ForEach(tasks) { task in
+                    HStack {
+                        Text(task.text)
+                            .padding(.vertical, 5)
+                            .padding(.horizontal)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(5)
                             .foregroundColor(.white)
+
+                        Spacer()
+
+                        Button(action: {
+                            if let index = tasks.firstIndex(of: task) {
+                                tasks.remove(at: index)
+                                onDelete()
+                            }
+                        }) {
+                            Image(systemName: "trash")
+                                .foregroundColor(.white)
+                        }
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
             }
         }
         .padding()
         .background(color)
         .cornerRadius(12)
+        .frame(maxWidth: .infinity)
     }
 }
 
