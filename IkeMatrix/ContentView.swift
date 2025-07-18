@@ -25,6 +25,11 @@ struct ContentView: View {
 
     @State private var newTaskText = ""
     @State private var selectedQuadrant = 0
+    
+    @State private var showingInspector = false
+    @State private var inspectorQuadrantIndex: Int? = nil
+    @State private var inspectorText = ""
+    @FocusState private var isTextFieldFocused: Bool
 
     let quadrantTitles = [
         "Urgent & Important",
@@ -39,6 +44,7 @@ struct ContentView: View {
         "U + NI",
         "NU + NI"
     ]
+    
 
     var body: some View {
         ScrollView {
@@ -48,39 +54,13 @@ struct ContentView: View {
                         title: quadrantTitles[index],
                         color: color(for: index),
                         tasks: binding(for: index),
-                        onDelete: saveTasks
-                    )
-                }
-
-                VStack {
-                    TextField("New Task", text: $newTaskText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
-
-                    HStack(spacing: 10) {
-                        ForEach(0..<4) { index in
-                            Button(action: {
-                                selectedQuadrant = index
-                            }) {
-                                Text(quadrantTitlesPicker[index])
-                                    .font(.caption)
-                                    .padding(.vertical, 8)
-                                    .padding(.horizontal, 10)
-                                    .frame(maxWidth: .infinity)
-                                    .background(color(for: index).opacity(selectedQuadrant == index ? 1.0 : 0.4))
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
-                            }
+                        onDelete: saveTasks,
+                        onTitleTapped: {
+                            inspectorQuadrantIndex = index
+                            inspectorText = ""
+                            showingInspector = true
                         }
-                    }
-                    .padding(.horizontal)
-                    Button("Add Task") {
-                        addTask()
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    )
                 }
             }
             .padding()
@@ -88,7 +68,63 @@ struct ContentView: View {
         .onAppear() {
             loadTasks()
         }
+        .inspector(isPresented: $showingInspector) {
+            VStack(spacing: 24) {
+                Text("Add to \(quadrantTitles[inspectorQuadrantIndex ?? 0])")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.top)
+
+                TextField("Describe your task here...", text: $inspectorText)
+                    .font(.title2)
+                    .padding()
+                    .frame(minHeight: 60)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    .submitLabel(.done)
+                    .focused($isTextFieldFocused)
+                    .onSubmit {
+                        addTaskFromInspector()
+                    }
+
+                Button(action: {
+                    addTaskFromInspector()
+                }) {
+                    Text("Add Task")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal)
+
+                Button("Cancel") {
+                    showingInspector = false
+                }
+                .foregroundColor(.red)
+                .padding(.bottom)
+
+                Spacer()
+            }
+            .padding()
+            .onAppear {
+                isTextFieldFocused = true
+            }
+        }
     }
+    
+    private func addTaskFromInspector() {
+        if let index = inspectorQuadrantIndex, !inspectorText.trimmingCharacters(in: .whitespaces).isEmpty {
+            binding(for: index).wrappedValue.append(TaskItem(text: inspectorText.trimmingCharacters(in: .whitespaces)))
+            saveTasks()
+            inspectorText = ""
+            showingInspector = false
+        }
+    }
+    
 
     private func binding(for index: Int) -> Binding<[TaskItem]> {
         switch index {
@@ -161,14 +197,17 @@ struct SectionView: View {
     var color: Color
     @Binding var tasks: [TaskItem]
     var onDelete: () -> Void
+    var onTitleTapped: () -> Void = { }
 
     var body: some View {
         VStack(alignment: .leading) {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.white)
-                .padding(.top)
-
+                .onTapGesture {
+                    onTitleTapped()
+                }
+            
             ForEach(tasks) { task in
                 HStack {
                     Text(task.text)
