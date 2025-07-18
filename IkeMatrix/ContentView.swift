@@ -32,6 +32,13 @@ struct ContentView: View {
         "Urgent & Not Important",
         "Not Urgent & Not Important"
     ]
+    
+    let quadrantTitlesPicker = [
+        "U + I",
+        "NU + I",
+        "U + NI",
+        "NU + NI"
+    ]
 
     var body: some View {
         ScrollView {
@@ -52,7 +59,7 @@ struct ContentView: View {
 
                     Picker("Quadrant", selection: $selectedQuadrant) {
                         ForEach(0..<4) { index in
-                            Text(quadrantTitles[index]).tag(index)
+                            Text(quadrantTitlesPicker[index]).tag(index)
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
