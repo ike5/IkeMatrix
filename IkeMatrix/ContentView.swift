@@ -57,14 +57,23 @@ struct ContentView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding(.horizontal)
 
-                    Picker("Quadrant", selection: $selectedQuadrant) {
+                    HStack(spacing: 10) {
                         ForEach(0..<4) { index in
-                            Text(quadrantTitlesPicker[index]).tag(index)
+                            Button(action: {
+                                selectedQuadrant = index
+                            }) {
+                                Text(quadrantTitlesPicker[index])
+                                    .font(.caption)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 10)
+                                    .frame(maxWidth: .infinity)
+                                    .background(color(for: index).opacity(selectedQuadrant == index ? 1.0 : 0.4))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
                         }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
                     .padding(.horizontal)
-
                     Button("Add Task") {
                         addTask()
                     }
