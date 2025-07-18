@@ -207,9 +207,7 @@ struct SectionView: View {
             Text(title)
                 .font(.headline)
                 .foregroundColor(.white)
-                .onTapGesture {
-                    onTitleTapped()
-                }
+                
             
             if tasks.isEmpty {
                 Text("No tasks yet")
@@ -249,6 +247,9 @@ struct SectionView: View {
         .background(color)
         .cornerRadius(12)
         .frame(maxWidth: .infinity)
+        .onTapGesture {
+            onTitleTapped()
+        }
     }
 }
 
