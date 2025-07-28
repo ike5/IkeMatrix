@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct TaskItem: Identifiable, Hashable, Codable {
     let id: UUID
@@ -15,6 +16,16 @@ struct TaskItem: Identifiable, Hashable, Codable {
         self.id = id
         self.text = text
     }
+}
+
+extension TaskItem: Transferable {
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .taskItem)
+    }
+}
+
+extension UTType {
+    static let taskItem = UTType(exportedAs: "com.ikematrix.taskitem", conformingTo: .data)
 }
 
 struct ContentView: View {
@@ -59,6 +70,9 @@ struct ContentView: View {
                             inspectorQuadrantIndex = index
                             inspectorText = ""
                             showingInspector = true
+                        },
+                        onDrop: { task in
+                            moveTask(task, to: index)
                         }
                     )
                 }
@@ -193,6 +207,21 @@ struct ContentView: View {
             notUrgentNotImportant = decoded
         }
     }
+
+    private func moveTask(_ task: TaskItem, to targetIndex: Int) {
+        for i in 0..<4 {
+            if let index = binding(for: i).wrappedValue.firstIndex(of: task) {
+                binding(for: i).wrappedValue.remove(at: index)
+                break
+            }
+        }
+
+        if !binding(for: targetIndex).wrappedValue.contains(task) {
+            binding(for: targetIndex).wrappedValue.append(task)
+        }
+
+        saveTasks()
+    }
 }
 
 struct SectionView: View {
@@ -201,6 +230,7 @@ struct SectionView: View {
     @Binding var tasks: [TaskItem]
     var onDelete: () -> Void
     var onTitleTapped: () -> Void = { }
+    var onDrop: (TaskItem) -> Void
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -227,6 +257,7 @@ struct SectionView: View {
                             .background(Color.white.opacity(0.2))
                             .cornerRadius(5)
                             .foregroundColor(.white)
+                            .draggable(task)
 
                         Spacer()
 
@@ -250,6 +281,13 @@ struct SectionView: View {
         .frame(maxWidth: .infinity)
         .onTapGesture {
             onTitleTapped()
+        }
+        .dropDestination(for: TaskItem.self) { droppedItems, location in
+            if let item = droppedItems.first {
+                onDrop(item)
+                return true
+            }
+            return false
         }
     }
 }
