@@ -217,6 +217,7 @@ struct SectionView: View {
                     .background(Color.white.opacity(0.1))
                     .cornerRadius(8)
                     .padding(.horizontal)
+
             } else {
                 ForEach(tasks) { task in
                     HStack {
