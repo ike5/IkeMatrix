@@ -126,27 +126,24 @@ struct ContentView: View {
                         addTaskFromInspector()
                     }
 
+                let trimmedText = inspectorText.trimmingCharacters(in: .whitespaces)
+                let isAddMode = editingTask == nil
+                let isValid = !trimmedText.isEmpty
+                let isModified = editingTask?.text != trimmedText
+                let shouldEnable = isAddMode ? isValid : isValid && isModified
+
                 Button(action: {
                     addTaskFromInspector()
                 }) {
-                    if editingTask != nil {
-                        Text("Save Task")
-                            .font(.headline)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.accentColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                    } else {
-                        Text("Add Task")
-                            .font(.headline)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.accentColor)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                    }
+                    Text(isAddMode ? "Add Task" : "Save Task")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(shouldEnable ? Color.blue : Color.gray)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
                 }
+                .disabled(!shouldEnable)
                 .padding(.horizontal)
 
                 Button("Cancel") {
