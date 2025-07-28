@@ -41,6 +41,7 @@ struct ContentView: View {
     @State private var inspectorQuadrantIndex: Int? = nil
     @State private var inspectorText = ""
     @FocusState private var isTextFieldFocused: Bool
+    @State private var editingTask: TaskItem? = nil
 
     let quadrantTitles = [
         "Urgent & Important",
@@ -69,10 +70,23 @@ struct ContentView: View {
                         onTitleTapped: {
                             inspectorQuadrantIndex = index
                             inspectorText = ""
+                            editingTask = nil
                             showingInspector = true
                         },
                         onDrop: { task in
                             moveTask(task, to: index)
+                        },
+                        onEdit: { task in
+                            inspectorText = task.text
+                            inspectorQuadrantIndex = index
+                            editingTask = task
+                            showingInspector = true
+                        },
+                        onDeleteTask: { task in
+                            if let idx = binding(for: index).wrappedValue.firstIndex(of: task) {
+                                binding(for: index).wrappedValue.remove(at: idx)
+                                saveTasks()
+                            }
                         }
                     )
                 }
@@ -87,10 +101,17 @@ struct ContentView: View {
         }
         .inspector(isPresented: $showingInspector) {
             VStack(spacing: 24) {
-                Text("Add to \(quadrantTitles[inspectorQuadrantIndex ?? 0])")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top)
+                if let _ = editingTask {
+                    Text("Edit Task in \(quadrantTitles[inspectorQuadrantIndex ?? 0])")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .padding(.top)
+                } else {
+                    Text("Add to \(quadrantTitles[inspectorQuadrantIndex ?? 0])")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .padding(.top)
+                }
 
                 TextField("Describe your task here...", text: $inspectorText)
                     .font(.title2)
@@ -108,18 +129,29 @@ struct ContentView: View {
                 Button(action: {
                     addTaskFromInspector()
                 }) {
-                    Text("Add Task")
-                        .font(.headline)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+                    if editingTask != nil {
+                        Text("Save Task")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    } else {
+                        Text("Add Task")
+                            .font(.headline)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
                 }
                 .padding(.horizontal)
 
                 Button("Cancel") {
                     showingInspector = false
+                    editingTask = nil
                 }
                 .foregroundColor(.red)
                 .padding(.bottom)
@@ -135,10 +167,17 @@ struct ContentView: View {
     
     private func addTaskFromInspector() {
         if let index = inspectorQuadrantIndex, !inspectorText.trimmingCharacters(in: .whitespaces).isEmpty {
-            binding(for: index).wrappedValue.append(TaskItem(text: inspectorText.trimmingCharacters(in: .whitespaces)))
+            if let task = editingTask {
+                if let taskIndex = binding(for: index).wrappedValue.firstIndex(of: task) {
+                    binding(for: index).wrappedValue[taskIndex].text = inspectorText.trimmingCharacters(in: .whitespaces)
+                }
+            } else {
+                binding(for: index).wrappedValue.append(TaskItem(text: inspectorText.trimmingCharacters(in: .whitespaces)))
+            }
             saveTasks()
             inspectorText = ""
             showingInspector = false
+            editingTask = nil
         }
     }
     
@@ -231,6 +270,8 @@ struct SectionView: View {
     var onDelete: () -> Void
     var onTitleTapped: () -> Void = { }
     var onDrop: (TaskItem) -> Void
+    var onEdit: (TaskItem) -> Void
+    var onDeleteTask: (TaskItem) -> Void
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -260,18 +301,15 @@ struct SectionView: View {
                             .draggable(task)
 
                         Spacer()
-
-                        Button(action: {
-                            if let index = tasks.firstIndex(of: task) {
-                                tasks.remove(at: index)
-                                onDelete()
-                            }
-                        }) {
-                            Image(systemName: "trash")
-                                .foregroundColor(.white)
-                        }
                     }
                     .padding(.horizontal)
+                    .onTapGesture {
+                        onEdit(task)
+                    }
+                    .contextMenu {
+                        Button("Edit") { onEdit(task) }
+                        Button("Delete", role: .destructive) { onDeleteTask(task) }
+                    }
                 }
             }
         }
