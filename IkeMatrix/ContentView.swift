@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import Foundation
 
 struct TaskItem: Identifiable, Hashable, Codable {
     let id: UUID
@@ -29,6 +30,8 @@ extension UTType {
 }
 
 struct ContentView: View {
+    let kvStore = NSUbiquitousKeyValueStore.default
+    
     @State private var urgentImportant: [TaskItem] = []
     @State private var notUrgentImportant: [TaskItem] = []
     @State private var urgentNotImportant: [TaskItem] = []
@@ -98,6 +101,13 @@ struct ContentView: View {
         .frame(maxWidth: .infinity)
         .onAppear() {
             loadTasks()
+            NotificationCenter.default.addObserver(
+                forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                object: kvStore,
+                queue: .main
+            ){ _ in
+                loadTasks()
+            }
         }
         .inspector(isPresented: $showingInspector) {
             VStack(spacing: 24) {
@@ -219,26 +229,29 @@ struct ContentView: View {
         let allTasks = [urgentImportant, notUrgentImportant, urgentNotImportant, notUrgentNotImportant]
         for (index, tasks) in allTasks.enumerated() {
             if let data = try? encoder.encode(tasks) {
-                UserDefaults.standard.set(data, forKey: storageKeys[index])
+                // UserDefaults.standard.set(data, forKey: storageKeys[index])
+                kvStore.set(data, forKey: storageKeys[index])
             }
         }
+        kvStore.synchronize()
     }
 
     func loadTasks() {
         let decoder = JSONDecoder()
-        if let data = UserDefaults.standard.data(forKey: storageKeys[0]),
+        //if let data = UserDefaults.standard.data(forKey: storageKeys[0]),
+        if let data = kvStore.data(forKey: storageKeys[0]),
            let decoded = try? decoder.decode([TaskItem].self, from: data) {
             urgentImportant = decoded
         }
-        if let data = UserDefaults.standard.data(forKey: storageKeys[1]),
+        if let data = kvStore.data(forKey: storageKeys[1]),
            let decoded = try? decoder.decode([TaskItem].self, from: data) {
             notUrgentImportant = decoded
         }
-        if let data = UserDefaults.standard.data(forKey: storageKeys[2]),
+        if let data = kvStore.data(forKey: storageKeys[2]),
            let decoded = try? decoder.decode([TaskItem].self, from: data) {
             urgentNotImportant = decoded
         }
-        if let data = UserDefaults.standard.data(forKey: storageKeys[3]),
+        if let data = kvStore.data(forKey: storageKeys[3]),
            let decoded = try? decoder.decode([TaskItem].self, from: data) {
             notUrgentNotImportant = decoded
         }
